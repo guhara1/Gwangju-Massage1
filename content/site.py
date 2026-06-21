@@ -1,6 +1,5 @@
 # 사이트 공통 설정
-# 배포 도메인 확정 후 BASE_URL 을 실제 도메인으로 변경하세요.
-BASE_URL = "https://www.gwangju-barogo.example.com"
+BASE_URL = "https://gwangju-massage1.pages.dev"
 
 BRAND = "바로GO"
 PHONE = "0508-202-4719"
@@ -8,6 +7,11 @@ PHONE_DISPLAY = "0508-202-4719"
 
 # 제휴·제작 문의 텔레그램 링크
 TELEGRAM_URL = "https://t.me/googleseolab"
+
+# 검색엔진 인증·색인
+NAVER_VERIFICATION = "fbe7562b66c521e1bcb2638ebc78b732fe126521"
+GOOGLE_VERIFICATION = ""  # 구글 서치콘솔 메타 인증값(있으면 입력)
+INDEXNOW_KEY = "fcc506f3871848ea84b7b4bf4c301b092cab0f7b9225469d98e83b16654e86f5"
 
 # 상단 메뉴 — 메뉴명과 URL에는 "출장마사지"를 반복하지 않고 지역명·생활권명만 표시한다.
 NAV = [

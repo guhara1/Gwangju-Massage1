@@ -10,6 +10,7 @@ content/ 패키지의 페이지 정의를 읽어 정적 HTML을 생성한다.
 """
 import datetime
 import html
+import json
 import os
 import re
 import shutil
@@ -19,7 +20,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from content import PAGES
 from content.site import (BASE_URL, BRAND, NAV, PHONE, PHONE_DISPLAY, TELEGRAM_URL,
-                          NAVER_VERIFICATION, GOOGLE_VERIFICATION, INDEXNOW_KEY)
+                          NAVER_VERIFICATION, GOOGLE_VERIFICATION, INDEXNOW_KEY,
+                          RATING_VALUE, RATING_COUNT, REVIEW_COUNT, REVIEWS)
 
 # 검색엔진 사이트 인증 메타 — 전 페이지 <head>에 삽입(네이버는 메인 인증, 무해)
 _VERIFY_META = ""
@@ -113,6 +115,172 @@ def render_toc(items) -> str:
     )
 
 
+# ── 구조화 데이터(JSON-LD) — 전 페이지 공통 주입 ───────────────────────────
+_BASE = BASE_URL.rstrip("/")
+
+
+def _jsonld(obj) -> str:
+    return (
+        '<script type="application/ld+json">\n'
+        + json.dumps(obj, ensure_ascii=False, indent=2)
+        + "\n</script>"
+    )
+
+
+def _reviews_ld():
+    return [
+        {
+            "@type": "Review",
+            "author": {"@type": "Person", "name": author},
+            "datePublished": date,
+            "reviewRating": {
+                "@type": "Rating",
+                "ratingValue": rating,
+                "bestRating": "5",
+                "worstRating": "1",
+            },
+            "reviewBody": body,
+        }
+        for author, rating, date, body in REVIEWS
+    ]
+
+
+def business_schema(page, area_name):
+    """전 페이지에 넣는 사업자 + 집계평점 + 후기(Review) 스키마."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "HealthAndBeautyBusiness",
+        "@id": _BASE + "/#business",
+        "name": BRAND,
+        "telephone": PHONE,
+        "url": _BASE + "/",
+        "image": _BASE + "/assets/og-image.png",
+        "priceRange": "₩90,000 - ₩180,000",
+        "description": page["desc"],
+        "openingHours": "Mo-Su 00:00-24:00",
+        "areaServed": {"@type": "AdministrativeArea", "name": area_name},
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": RATING_VALUE,
+            "reviewCount": REVIEW_COUNT,
+            "ratingCount": RATING_COUNT,
+            "bestRating": "5",
+            "worstRating": "1",
+        },
+        "review": _reviews_ld(),
+    }
+
+
+def breadcrumb_schema(crumbs, canonical):
+    items = [{"@type": "ListItem", "position": 1, "name": "홈", "item": _BASE + "/"}]
+    for i, (label, href) in enumerate(crumbs, start=2):
+        items.append({
+            "@type": "ListItem",
+            "position": i,
+            "name": label,
+            "item": (_BASE + href) if href else canonical,
+        })
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": items,
+    }
+
+
+_FAQ_RE = re.compile(r'<div class="faq-item">\s*<h3>(.*?)</h3>\s*<p>(.*?)</p>', re.S)
+
+
+def _plain(text: str) -> str:
+    text = re.sub(r"<[^>]+>", "", text)
+    return re.sub(r"\s+", " ", html.unescape(text)).strip()
+
+
+def faq_schema(body):
+    qa = _FAQ_RE.findall(body)
+    if not qa:
+        return None
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+            {
+                "@type": "Question",
+                "name": _plain(q),
+                "acceptedAnswer": {"@type": "Answer", "text": _plain(a)},
+            }
+            for q, a in qa
+        ],
+    }
+
+
+def build_schema(page, canonical) -> str:
+    """페이지 메타·본문에서 사업자·집계평점·후기·이동경로·FAQ 스키마를 자동 생성."""
+    crumbs = page.get("breadcrumb") or []
+    area_name = "경기도 광주시"
+    if page["path"].startswith("gyeonggi/gwangju-si/") and len(crumbs) >= 2:
+        area_name = f"경기도 광주시 {crumbs[-1][0]}"
+    blocks = [_jsonld(business_schema(page, area_name))]
+    if crumbs:
+        blocks.append(_jsonld(breadcrumb_schema(crumbs, canonical)))
+    faq = faq_schema(page["body"])
+    if faq:
+        blocks.append(_jsonld(faq))
+    return "\n".join(blocks) + "\n"
+
+
+# ── 내부링크 강화 — 롱테일 앵커 관련 안내 블록(전 페이지 공통) ────────────────
+def _nav_children(label):
+    for l, href, children in NAV:
+        if l == label:
+            return [(cl, ch) for cl, ch in children if "전체" not in cl]
+    return []
+
+
+_REGION_LINKS = _nav_children("지역별 안내")
+_STATION_LINKS = _nav_children("역세권 안내")
+_LIVING_LINKS = _nav_children("생활권 안내")
+
+
+def related_links(path: str) -> str:
+    """현재 페이지 성격에 맞춰 이웃 지역·생활권·핵심 안내로 가는 롱테일 내부링크."""
+    if path == "":
+        return ""  # 메인은 본문에서 직접 링크
+    cur = "/" + path
+    cur_key = cur.rstrip("/")
+    if cur.startswith("/gyeonggi/gwangju-si/station/"):
+        group, gtitle = _STATION_LINKS, "다른 역세권 출장마사지·홈타이 안내"
+    elif cur.startswith("/gyeonggi/gwangju-si/area/"):
+        group, gtitle = _LIVING_LINKS, "다른 생활권 출장마사지·홈타이 안내"
+    elif cur.startswith("/gyeonggi/gwangju-si/") and cur_key != "/gyeonggi/gwangju-si":
+        group, gtitle = _REGION_LINKS, "이웃 지역 출장마사지·홈타이 안내"
+    else:
+        group, gtitle = _REGION_LINKS, "경기광주 지역별 출장마사지·홈타이 안내"
+
+    siblings = [(l, h) for l, h in group if h.rstrip("/") != cur_key][:8]
+    sib_html = "".join(
+        f'<li><a href="{h}">{l} 출장마사지·홈타이 안내</a></li>' for l, h in siblings
+    )
+    cross = [
+        ("경기광주 지역별 출장마사지 전체 보기", "/gyeonggi/gwangju-si/"),
+        ("경기광주역·초월·곤지암 역세권 안내", "/gyeonggi/gwangju-si/station/"),
+        ("도심·외곽 생활권별 홈타이 안내", "/gyeonggi/gwangju-si/area/"),
+        ("출장마사지 예약 방법·가능 시간 확인", "/reservation/"),
+        ("홈타이 처음 이용 가이드 보기", "/guide/"),
+        ("방문 전 확인사항 체크리스트", "/checklist/"),
+    ]
+    cross = [(l, h) for l, h in cross if h.rstrip("/") != cur_key]
+    cross_html = "".join(f'<li><a href="{h}">{l}</a></li>' for l, h in cross)
+
+    return (
+        '<section class="related" aria-label="함께 보면 좋은 안내">'
+        f"<h2>{gtitle}</h2>"
+        f'<ul class="card-grid related-grid">{sib_html}</ul>'
+        '<p class="related-sub">예약 전 함께 확인하면 좋은 안내</p>'
+        f'<ul class="card-grid related-grid">{cross_html}</ul>'
+        "</section>"
+    )
+
+
 def render_page(page: dict) -> str:
     path = page["path"]
     title = page["title"]
@@ -131,6 +299,8 @@ def render_page(page: dict) -> str:
         else '<meta name="robots" content="index,follow">'
     )
     canonical = BASE_URL.rstrip("/") + "/" + path
+    schema_html = build_schema(page, canonical)
+    related_html = related_links(path)
 
     # 히어로가 있는 페이지(메인)는 H1을 히어로 안에서 출력한다.
     if hero:
@@ -173,7 +343,7 @@ def render_page(page: dict) -> str:
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/style.css">
 <link rel="alternate" type="application/rss+xml" title="{BRAND} 업데이트" href="/rss.xml">
-{extra_head}</head>
+{schema_html}{extra_head}</head>
 <body>
 <header class="site-header">
   <div class="header-accent" aria-hidden="true"></div>
@@ -196,6 +366,7 @@ def render_page(page: dict) -> str:
       {render_breadcrumb(crumbs)}
       {h1_html}
       {body}
+      {related_html}
     </article>
   </div>
 </main>
@@ -289,12 +460,25 @@ def build() -> None:
         "%a, %d %b %Y %H:%M:%S +0000"
     )
 
-    # sitemap.xml — lastmod 포함(색인 신선도 신호)
-    urls = "\n".join(
-        f"  <url><loc>{u}</loc><lastmod>{today}</lastmod>"
-        f"<changefreq>weekly</changefreq></url>"
-        for u in sitemap_urls
-    )
+    # sitemap.xml — lastmod·priority·changefreq 포함(색인 신선도·중요도 신호)
+    def _sitemap_hint(u):
+        rel = u[len(base):].strip("/")
+        if rel == "":
+            return "daily", "1.0"          # 메인
+        # 허브 페이지(지역/역세권/생활권 목록)는 갱신·중요도 상위
+        if rel in ("gyeonggi/gwangju-si", "gyeonggi/gwangju-si/station",
+                   "gyeonggi/gwangju-si/area"):
+            return "daily", "0.9"
+        return "weekly", "0.7"
+
+    url_lines = []
+    for u in sitemap_urls:
+        cf, pr = _sitemap_hint(u)
+        url_lines.append(
+            f"  <url><loc>{u}</loc><lastmod>{today}</lastmod>"
+            f"<changefreq>{cf}</changefreq><priority>{pr}</priority></url>"
+        )
+    urls = "\n".join(url_lines)
     with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(
             '<?xml version="1.0" encoding="UTF-8"?>\n'

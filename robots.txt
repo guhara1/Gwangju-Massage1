@@ -10,5 +10,5 @@ Allow: /
 User-agent: bingbot
 Allow: /
 
-Sitemap: https://gwangju-massage1.pages.dev/sitemap.xml
-Sitemap: https://gwangju-massage1.pages.dev/rss.xml
+Sitemap: https://gwangju-massage1.netlify.app/sitemap.xml
+Sitemap: https://gwangju-massage1.netlify.app/rss.xml

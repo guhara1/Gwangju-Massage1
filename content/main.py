@@ -3,64 +3,8 @@
 from .site import BASE_URL, BRAND, PHONE, PHONE_DISPLAY
 from .pricing import PRICING
 
-_JSONLD = f"""<script type="application/ld+json">
-{{
-  "@context": "https://schema.org",
-  "@type": "HealthAndBeautyBusiness",
-  "name": "{BRAND}",
-  "telephone": "{PHONE}",
-  "url": "{BASE_URL}/",
-  "image": "{BASE_URL}/assets/og-image.png",
-  "description": "경기도 광주시 전지역 방문 출장마사지·홈타이 예약 안내",
-  "areaServed": {{
-    "@type": "AdministrativeArea",
-    "name": "경기도 광주시"
-  }},
-  "openingHours": "Mo-Su 00:00-24:00",
-  "priceRange": "₩90,000 - ₩180,000"
-}}
-</script>
-<script type="application/ld+json">
-{{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {{
-      "@type": "Question",
-      "name": "여기는 광주광역시인가요, 경기도 광주인가요?",
-      "acceptedAnswer": {{
-        "@type": "Answer",
-        "text": "이 사이트는 경기도 광주시(경기광주)를 대상으로 합니다. 경기광주역, 경안동, 태전, 오포, 곤지암, 초월 생활권을 안내하며 광주광역시와는 무관합니다."
-      }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "경기도 광주 어느 지역까지 방문하나요?",
-      "acceptedAnswer": {{
-        "@type": "Answer",
-        "text": "경안동·태전·오포·신현·능평·초월·곤지암을 비롯해 도척·퇴촌·남종·남한산성 외곽 생활권까지 안내합니다. 가능 여부는 예약 시 정확한 주소와 시간으로 확인합니다."
-      }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "오포1동·광남1동 페이지는 왜 없나요?",
-      "acceptedAnswer": {{
-        "@type": "Answer",
-        "text": "오포1·2동은 오포 생활권, 광남1·2동은 태전·광남 생활권으로 통합 안내하여 중복 페이지 위험을 줄입니다."
-      }}
-    }},
-    {{
-      "@type": "Question",
-      "name": "외곽 지역도 추가 이동비가 있나요?",
-      "acceptedAnswer": {{
-        "@type": "Answer",
-        "text": "도척면·퇴촌면·남종면·남한산성면 등 광주시 외곽은 이동 시간이 더 걸려 추가 이동비가 발생할 수 있습니다. 예약 시 미리 안내해 드립니다."
-      }}
-    }}
-  ]
-}}
-</script>
-"""
+# 사업자·집계평점·후기(Review)·FAQ·이동경로 스키마는 build.py 가 전 페이지에 자동 주입한다.
+# 메인 페이지의 "자주 묻는 질문" 블록도 build.py 가 FAQPage 스키마로 자동 변환한다.
 
 _HERO = f"""<section class="hero">
   <div class="hero-inner">
@@ -96,15 +40,20 @@ _BODY = f"""
 <h2>대표 지역별 방문 가능 지역 안내</h2>
 <p>대표 지역은 경안동, 쌍령동, 송정동, 탄벌동, 오포 생활권, 신현동, 능평동, 태전·광남 생활권, 초월읍, 곤지암읍, 도척면, 퇴촌면, 남종면, 남한산성면으로 구성합니다. 오포1동·오포2동은 오포 생활권으로, 광남1동·광남2동은 태전·광남 생활권으로 통합해 행정동을 무리하게 쪼개지 않았습니다. 각 페이지에서는 생활권 특징, 가까운 역세권, 방문 전 확인사항, 추가 이동비 기준을 지역마다 고유하게 설명합니다.</p>
 <ul class="card-grid">
-<li><a href="/gyeonggi/gwangju-si/gyeongan-dong/">경안동</a></li>
-<li><a href="/gyeonggi/gwangju-si/taejeon-gwangnam-area/">태전·광남 생활권</a></li>
-<li><a href="/gyeonggi/gwangju-si/opo-area/">오포 생활권</a></li>
-<li><a href="/gyeonggi/gwangju-si/sinhyeon-dong/">신현동</a></li>
-<li><a href="/gyeonggi/gwangju-si/neungpyeong-dong/">능평동</a></li>
-<li><a href="/gyeonggi/gwangju-si/chowol-eup/">초월읍</a></li>
-<li><a href="/gyeonggi/gwangju-si/gonjiam-eup/">곤지암읍</a></li>
-<li><a href="/gyeonggi/gwangju-si/ssangnyeong-dong/">쌍령동</a></li>
-<li><a href="/gyeonggi/gwangju-si/songjeong-dong/">송정동</a></li>
+<li><a href="/gyeonggi/gwangju-si/gyeongan-dong/">경안동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/ssangnyeong-dong/">쌍령동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/songjeong-dong/">송정동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/tanbeol-dong/">탄벌동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/opo-area/">오포 생활권 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/sinhyeon-dong/">신현동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/neungpyeong-dong/">능평동 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/taejeon-gwangnam-area/">태전·광남 생활권 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/chowol-eup/">초월읍 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/gonjiam-eup/">곤지암읍 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/docheck-myeon/">도척면 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/toechon-myeon/">퇴촌면 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/namjong-myeon/">남종면 출장마사지</a></li>
+<li><a href="/gyeonggi/gwangju-si/namhansanseong-myeon/">남한산성면 출장마사지</a></li>
 </ul>
 <p>경기도 광주 전체 지역 구성이 궁금하시면 <a href="/gyeonggi/gwangju-si/">지역별 안내 전체</a>에서 한눈에 확인하실 수 있습니다.</p>
 </section>
@@ -119,6 +68,8 @@ _BODY = f"""
 <li><a href="/gyeonggi/gwangju-si/station/samdong-station/">삼동역</a></li>
 <li><a href="/gyeonggi/gwangju-si/station/gwangju-terminal-area/">광주터미널 생활권</a></li>
 <li><a href="/gyeonggi/gwangju-si/station/taejeon-area/">태전지구 생활권</a></li>
+<li><a href="/gyeonggi/gwangju-si/station/opo-sinhyeon-nearby-area/">오포·신현 인접 생활권</a></li>
+<li><a href="/gyeonggi/gwangju-si/station/pangyo-bundang-nearby-area/">판교·분당 인접 생활권</a></li>
 </ul>
 <p>역세권 전체 구성은 <a href="/gyeonggi/gwangju-si/station/">역세권 안내</a>에서 확인하세요.</p>
 </section>
@@ -128,11 +79,16 @@ _BODY = f"""
 <p>생활권 안내는 광주터미널·중심상권, 태전·고산, 오포·문형·양벌, 신현·능평, 곤지암·도자공원, 퇴촌·팔당호처럼 사용자가 자신의 위치를 더 쉽게 찾을 수 있도록 보조하는 페이지입니다. 같은 태전 키워드라도 지역 페이지(태전·광남)와 생활권 페이지(태전·고산)의 역할을 분리해 중복을 줄였습니다.</p>
 <ul class="card-grid">
 <li><a href="/gyeonggi/gwangju-si/area/gyeonggi-gwangju-gyeongan/">경기광주역·경안동</a></li>
+<li><a href="/gyeonggi/gwangju-si/area/gwangju-terminal-center/">광주터미널·중심상권</a></li>
 <li><a href="/gyeonggi/gwangju-si/area/taejeon-gosan/">태전·고산</a></li>
 <li><a href="/gyeonggi/gwangju-si/area/opo-munhyeong-yangbeol/">오포·문형·양벌</a></li>
 <li><a href="/gyeonggi/gwangju-si/area/sinhyeon-neungpyeong/">신현·능평</a></li>
+<li><a href="/gyeonggi/gwangju-si/area/chowol-ssangdong/">초월·쌍동</a></li>
 <li><a href="/gyeonggi/gwangju-si/area/gonjiam-ceramic-park/">곤지암·도자공원</a></li>
 <li><a href="/gyeonggi/gwangju-si/area/toechon-paldang/">퇴촌·팔당호</a></li>
+<li><a href="/gyeonggi/gwangju-si/area/namhansanseong-mokhyeon/">남한산성·목현</a></li>
+<li><a href="/gyeonggi/gwangju-si/area/songjeong-tanbeol/">송정·탄벌 주거</a></li>
+<li><a href="/gyeonggi/gwangju-si/area/docheck-gonjiam-resort/">도척·곤지암리조트 인접</a></li>
 </ul>
 <p>생활권 전체 목록은 <a href="/gyeonggi/gwangju-si/area/">생활권 안내</a>에서 볼 수 있습니다.</p>
 </section>
@@ -186,7 +142,7 @@ PAGE = {
     "desc": "경기도 광주 출장마사지·홈타이 예약 전 경기광주역, 태전, 오포, 곤지암, 초월 생활권을 확인하세요.",
     "h1": "경기도 광주 출장마사지 · 광주시 홈타이 지역별 예약 안내",
     "body": _BODY,
-    "extra_head": _JSONLD,
+    "extra_head": "",
     "breadcrumb": [],
     "hero": _HERO,
 }
